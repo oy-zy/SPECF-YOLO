@@ -1,5 +1,5 @@
 # FCNet
-![image](https://github.com/2226450890/FCNet/blob/main/model1.jpg)
+![image](https://github.com/oy-zy/image/1230858173bf3ed33b4796f51b2c0728.png)
 Accurate counting model of fish in complex underwater environments.
 ![image](https://github.com/2226450890/FCNet/blob/main/model2.jpg)
 Feature extraction module, (a) represents the process of extracting interference features,
