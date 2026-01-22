@@ -1,11 +1,18 @@
-# FCNet
-![image](https://github.com/oy-zy/image/1230858173bf3ed33b4796f51b2c0728.png)
+# SPECF-YOLO
+<p align="center">
+  <img src="https://github.com/oy-zy/image/blob/main/1230858173bf3ed33b4796f51b2c0728.png" alt="FCNet Architecture">
+</p>
 Accurate counting model of fish in complex underwater environments.
-![image](https://github.com/2226450890/FCNet/blob/main/model2.jpg)
+
+<p align="center">
+  <img src="https://github.com/oy-zy/image/blob/main/e04db8b97bb3c72db5609ea4ffab5fe9.png" alt="FCNet Architecture">
+</p>
 Feature extraction module, (a) represents the process of extracting interference features,
 (b) represents the process of extracting counting features, (c) represents the process of intercepting
 the background image, and (d) represents the process of intercepting the single fish image.
-![image](https://github.com/2226450890/FCNet/blob/main/model3.jpg)
+<p align="center">
+  <img src="https://github.com/oy-zy/image/blob/main/fa7594bf10666044d3ea39eb6f8c5f80.png" alt="FCNet Architecture">
+</p>
 Counting feature extraction module and feature supplement module.
 
 ## Dataset
