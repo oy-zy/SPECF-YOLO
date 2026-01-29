@@ -10,7 +10,7 @@ if __name__ == '__main__':
               split='val',
               imgsz=640,
               batch=16,
-              iou=0.3,
+              iou=0.6,
               conf=0.001,
               # rect=False,
               # save_json=True, # if you need to cal coco metrice
