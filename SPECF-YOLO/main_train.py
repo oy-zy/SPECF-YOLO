@@ -3,7 +3,7 @@ from ultralytics import YOLO
 
 def main():
     # 加载模型
-    model = YOLO("./ultralytics/models/v8/yolov8n.yaml")  #  MHDL_2025_5  - fsas_2025_ceshi fsas_2025  从头开始构建新模型\yolov8n-C2f_DCNv4.yaml\yolov8n-SNHL.yaml
+    model = YOLO("...yaml")  #  MHDL_2025_5  - fsas_2025_ceshi fsas_2025  从头开始构建新模型\yolov8n-C2f_DCNv4.yaml\yolov8n-SNHL.yaml
 
     #model = YOLO("./ablation/train_2025_100_N_sgj_1/weights/last.pt")
     # 使用模型

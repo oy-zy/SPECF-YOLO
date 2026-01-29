@@ -663,15 +663,15 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [c1, c2, *args[1:]]#[c1, c2, ]
             if m in (BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost,
                      C3x, RepC3, C2D, C2Ghostv2, C2Ghost, C2P, C2fDCN, C2fGAM,
-                     C2fDCNDBB, C2fGAMDBB, C2f_FSAS_1):
+                     C2fDCNDBB, C2fGAMDBB, C2f_SCWM):
                 args.insert(2, n)  # number of repeats
                 n = 1
 
-        elif m is (FSDA):
+        elif m is (FFIEM):
             c2 = args[0]
             args = [c2]
 
-        elif m in {FSAS_1}:#WMB FSAS_1,FSDA
+        elif m in {FF_SCWM}:
             c2=ch[f]
             args=[c2,*args]
 

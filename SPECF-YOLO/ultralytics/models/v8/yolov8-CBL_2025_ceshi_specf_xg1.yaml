@@ -14,7 +14,7 @@ scales:  # model compound scaling constants, i.e. 'model=yolov8n.yaml' will call
 # gelan backbone
 backbone:
   [
-   [-1, 1, FSAS_1, [3]],
+   [-1, 1, FFIEM_1, [3]],
 
    # conv down
    [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2
@@ -23,25 +23,25 @@ backbone:
    [-1, 1, Conv, [128, 3, 2]],  # 2-P2/4
 
    # elan-1 block
-   [-1, 1, FSAS_1, [256]],  # 3
+   [-1, 1, FFIEM_1, [256]],  # 3
 
    # avg-conv down
    [-1, 1, Conv, [256, 3, 2]],  # 4-P3/8
 
    # elan-2 block
-   [-1, 1, FSAS_1, [512]],  # 5
+   [-1, 1, FFIEM_1, [512]],  # 5
 
    # avg-conv down
    [-1, 1, Conv, [512, 3, 2]],  # 6-P4/16
 
    # elan-2 block
-   [-1, 1, FSAS_1, [1024]],  # 7
+   [-1, 1, FFIEM_1, [1024]],  # 7
 
    # avg-conv down
    [-1, 1, Conv, [1024, 3, 2]],  # 8-P5/32
 
    # elan-2 block
-   [-1, 1, FSAS_1, [1024]],  # 9
+   [-1, 1, FFIEM_1, [1024]],  # 9
 
 
    # routing

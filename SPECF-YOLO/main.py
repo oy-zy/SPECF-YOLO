@@ -54,7 +54,7 @@ def coord2speed(id, p1, p2, Cnt, PointClouds):
 
 
 if __name__ == '__main__':
-    YOLO = YOLO('COCO/YOLOv8m/weights/best.pt')
+    YOLO = YOLO('.../best.pt')
 
     camera = cv2.VideoCapture(0)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)

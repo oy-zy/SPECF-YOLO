@@ -92,7 +92,7 @@ class DeformConv(nn.Module):
         out = self.deform_conv(x, offsets)
         return out
 '''
-class FSAS_1(nn.Module):
+class FS_SCWM_1(nn.Module):
     def __init__(self, dim, bias=False):
         super(FSAS_1, self).__init__()
 
@@ -124,7 +124,7 @@ class FSAS_1(nn.Module):
 
         return output
 
-class FSAS_1(nn.Module):
+class FS_SCWM_2(nn.Module):
     def __init__(self, dim, bias=False):
         super(FSAS_1, self).__init__()
 
@@ -163,7 +163,7 @@ class FSAS_1(nn.Module):
 
         return output
 '''
-class FSAS_1(nn.Module):
+class FFIEM(nn.Module):
     def __init__(self, dim, bias=False):
         super(FSAS_1, self).__init__()
 
@@ -175,7 +175,7 @@ class FSAS_1(nn.Module):
 
         self.norm = LayerNorm(dim * 2, LayerNorm_type='WithBias')
 
-        self.fsda_1 = FSDA_1(dim * 2)
+        self.ff = FSD_SCWM_1(dim * 2)
 
         #self.patch_size = 8
         #self.dcn = DeformConv(dim * 6, kernel_size=(5, 5), padding=2, groups=1)
@@ -183,7 +183,6 @@ class FSAS_1(nn.Module):
     def forward(self, x):
         hidden = self.to_hidden(x)
         q, k, v = self.to_hidden_dw(hidden).chunk(3, dim=1)
-
         #q, k, v = self.dcn(hidden).chunk(3, dim=1)
         #q_patch = rearrange(q, 'b c (h patch1) (w patch2) -> b c h w patch1 patch2', patch1=self.patch_size,
         #                    patch2=self.patch_size)
@@ -191,12 +190,10 @@ class FSAS_1(nn.Module):
         #                    patch2=self.patch_size)
         #q_fft = torch.fft.rfft2(q_patch.float())
         #k_fft = torch.fft.rfft2(k_patch.float())
-
-        q_fft = self.fsda_1(q)
-        k_fft = self.fsda_1(k)
-        v_fft = self.fsda_1(v)
+        q_fft = self.ff(q)
+        k_fft = self.ff(k)
+        v_fft = self.ff(v)
         out = q_fft * k_fft
-
         #out = torch.fft.irfft2(out, s=(self.patch_size, self.patch_size))
         #out = rearrange(out, 'b c h w patch1 patch2 -> b c (h patch1) (w patch2)', patch1=self.patch_size,
         #                patch2=self.patch_size)
@@ -213,77 +210,50 @@ class SELayer(nn.Module):
     def __init__(self, channel, reduction=16):
         super(SELayer, self).__init__()
 
-        # 自适应平均池化，将每个通道缩小到单个值（1x1 的空间大小）
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-
-        # SE块的全连接层，包含一个用于控制复杂度的降维率
         self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction, bias=False),  # 减少通道维度
-            nn.ReLU(inplace=True),  # ReLU激活函数引入非线性
-            nn.Linear(channel // reduction, channel, bias=False),  # 恢复原始通道维度
-            nn.Sigmoid()  # Sigmoid激活，将每个通道的权重限制在0到1之间
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
-        b, c, _, _ = x.size()  # 获取输入张量的批量大小和通道数量
-        y = self.avg_pool(x).view(b, c)  # 对每个通道进行全局平均池化并展平
-        y = self.fc(y).view(b, c, 1, 1)  # 通过全连接层生成每个通道的权重
-        return x * y.expand_as(x)  # 对输入特征图进行通道加权
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
 
-
-# 频谱动态聚合层
-class FSDA_1(nn.Module):
+class FF_SCWM(nn.Module):
     def __init__(self, nc):
-        super(FSDA_1, self).__init__()
+        super(FS_SCWM, self).__init__()
 
-        # 用于处理幅度部分的卷积和激活操作
         self.processmag = nn.Sequential(
-            nn.Conv2d(nc, nc, 1, 1, 0),  # 1x1卷积保持特征图大小不变
-            nn.LeakyReLU(0.1, inplace=True),  # LeakyReLU激活函数
-            SELayer(channel=nc),  # 加入SE层进行通道加权
-            nn.Conv2d(nc, nc, 1, 1, 0))  # 另一个1x1卷积
+            nn.Conv2d(nc, nc, 1, 1, 0),
+            nn.LeakyReLU(0.1, inplace=True),
+            SELayer(channel=nc),
+            nn.Conv2d(nc, nc, 1, 1, 0))
 
-        # 用于处理相位部分的卷积和激活操作
         self.processpha = nn.Sequential(
-            nn.Conv2d(nc, nc, 1, 1, 0),  # 1x1卷积保持特征图大小不变
-            nn.LeakyReLU(0.1, inplace=True),  # LeakyReLU激活函数
-            SELayer(channel=nc),  # 加入SE层进行通道加权
-            nn.Conv2d(nc, nc, 1, 1, 0))  # 另一个1x1卷积
+            nn.Conv2d(nc, nc, 1, 1, 0),
+            nn.LeakyReLU(0.1, inplace=True),
+            SELayer(channel=nc),
+            nn.Conv2d(nc, nc, 1, 1, 0))
 
     def forward(self, x):
         _, _, H, W = x.shape
-        # 使用了PyTorch的快速傅里叶变换(FFT)函数rfft2来对输入张量x执行二维离散傅里叶变换。以下是每个参数的详细说明：
-        # torch.fft.rfft2(x): 计算输入张量x的二维实数快速傅里叶变换。
-        # 这个函数只计算频谱中的正频率部分，因为输入数据是实数，频谱在正负频率上具有对称性。这种变换在处理图像、信号的频域分析时非常有用。
-        # norm = 'backward': 设定了傅里叶变换的归一化方式。norm
-        # 参数可以取以下值：
-        # 'backward'(默认值): 将输入值不做归一化变换。
-        # 'forward': 将结果除以总数，适合与逆傅里叶变换对称配合使用。
-        # 'ortho': 提供单位能量的正交归一化。
-        x_freq = torch.fft.rfft2(x, norm='backward')
-
-        # 获取输入张量的幅度和相位信息
-        ori_mag = torch.abs(x_freq)  # 计算复数张量的幅度
-        ori_pha = torch.angle(x_freq)  # 计算复数张量的相位
-
-        # 处理幅度信息
-        mag = self.processmag(ori_mag)  # 使用处理幅度的网络
-        mag = ori_mag + mag  # 将处理后的结果与原始幅度相加
-
-        # 处理相位信息
-        pha = self.processpha(ori_pha)  # 使用处理相位的网络
-        pha = ori_pha + pha  # 将处理后的结果与原始相位相加
-
-        # 重建复数形式的输出
-        real = mag * torch.cos(pha)  # 实部：幅度 * cos(相位)
-        imag = mag * torch.sin(pha)  # 虚部：幅度 * sin(相位)
-        x_out = torch.complex(real, imag)  # 组合成复数输出
-
+        x_freq = torch.fft.rfft2(x, norm='backward')        
+        ori_mag = torch.abs(x_freq)  
+        ori_pha = torch.angle(x_freq)  
+        mag = self.processmag(ori_mag)  
+        mag = ori_mag + mag  
+        pha = self.processpha(ori_pha)  
+        pha = ori_pha + pha  
+        real = mag * torch.cos(pha)  
+        imag = mag * torch.sin(pha)  
+        x_out = torch.complex(real, imag)  
         x_freq_spatial = torch.fft.irfft2(x_out, s=(H, W), norm='backward')
-
-        return x_freq_spatial  # 返回处理后的复数张量
-
-
+        return x_freq_spatial 
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
     """Pad to 'same' shape outputs."""
@@ -292,7 +262,6 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
     if p is None:
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
-
 
 class Conv(nn.Module):
     """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
@@ -324,7 +293,7 @@ class Bottleneck(nn.Module):
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, k[0], 1)
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
-        self.att = FSAS_1(c2)
+        self.att = FFIEM(c2)
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
@@ -332,7 +301,7 @@ class Bottleneck(nn.Module):
         return x + self.att(self.cv2(self.cv1(x))) if self.add else self.cv2(self.cv1(x))
 
 
-class C2f_FSAS_1(nn.Module):
+class C2f_SCWM(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
@@ -354,26 +323,6 @@ class C2f_FSAS_1(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
-
-# 测试代码
-if __name__ =='__main__':
-    image_size = (1, 3, 640, 640)
-    x = torch.rand(*image_size)
-    model = FSAS_1(3)
-    #model = C2f_MHDL(c1=3,c2=128,shortcut=True,n=3)
-    print(model(x).shape)
-    h=1
-
-
-    stars_Block =FSAS_1(256)  # 实例化 FSAS 模块，输入维度为256
-    # 创建一个输入张量，形状为 (batch_size, C, H, W)
-    batch_size = 8
-    input_tensor = torch.randn(batch_size, 256, 21, 27)
-    # 运行模型并打印输入和输出的形状
-    output_tensor = stars_Block(input_tensor)
-    print("Input shape:", input_tensor.shape)
-    print("Output shape:", output_tensor.shape)
-
 
 
 
