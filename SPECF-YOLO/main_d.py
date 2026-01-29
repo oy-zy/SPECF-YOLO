@@ -7,7 +7,7 @@ def main():
 
     model.predict(source='D:/videos/csj-500/datasets/cs-xinceshiji/5.jpg' ,
                   save=True,
-                  iou = 0.3)
+                  iou = 0.7)
 
 if __name__ == '__main__':
     main()
